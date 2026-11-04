@@ -149,3 +149,7 @@ and then copy the files (including `index.html`) to the server. `node stamp.js -
     </FilesMatch>
 
 If `mod_headers` is enabled (it is already used for the CSP), this can go in the same vhost.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

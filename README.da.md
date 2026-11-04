@@ -149,3 +149,7 @@ Selve `index.html` må ikke ligge i cachen længe, ellers ser browseren aldrig d
     </FilesMatch>
 
 Er `mod_headers` slået til (det bruges allerede til CSP'en), kan det stå i samme vhost.
+
+## Licens
+
+MIT, se [LICENSE](LICENSE).
