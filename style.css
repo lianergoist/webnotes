@@ -387,6 +387,7 @@ body {
 }
 
 .tb:hover:not(:disabled) { background: var(--hover); }
+.tb .ico { display: block; width: 20px; height: 20px; margin: auto; } /* ryk ind/tilbage */
 .tb:disabled { opacity: 0.4; cursor: default; }
 
 .seg { border: 1px solid var(--line); border-radius: 9px; padding: 2px; }
