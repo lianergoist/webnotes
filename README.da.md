@@ -128,8 +128,10 @@ Siden er på dansk som standard. Nederst i sidepanelet kan man vælge Dansk, Eng
 Noterne gemmes som ren tekst i serveren (DESCRIPTION i VJOURNAL), så andre programmer ser dem uændret. Markdown er kun en visning:
 
 - **Skriv / Vis** øverst i editoren skifter mellem tekstfeltet og den formaterede visning. Valget huskes i browseren. Opgaver (`- [ ]`) kan krydses af direkte i visningen, og det gemmes i teksten.
-- **Formatknapper** (fed, kursiv, overskrift, link, punkt-/nummereret-/opgaveliste, citat, kode) virker på markeringen. Genveje: Ctrl+B, Ctrl+I, Ctrl+K. Enter i en liste fortsætter den, og Enter på et tomt punkt afslutter den.
+- **Formatknapper** (fed, kursiv, overskrift, link, punkt-/nummereret-/opgaveliste, ryk tilbage, ryk ind, citat, kode) virker på markeringen. Ryk ind og ryk tilbage tilføjer eller fjerner 4 mellemrum på hver markeret linje (eller linjen med markøren). Genveje: Ctrl+B, Ctrl+I, Ctrl+K. Enter i en liste fortsætter den, og Enter på et tomt punkt afslutter den.
 - Understøttet: overskrifter, fed, kursiv, overstreget, kode og kodeblokke, citater, lister (også indlejrede), opgaver, tabeller, vandrette streger og links.
+- **Indrykning** virker som i DavNotes: hver 4 mellemrum (eller en tab) først på en linje er ét indrykningsniveau (op til 8).
+  Det afviger fra standard-Markdown, hvor 4 mellemrum giver en kodeblok; brug ``` til kode i stedet.
 - Sikkerhed: noten vises aldrig som HTML. Kun `http`, `https` og `mailto` bliver til links, og billeder hentes ikke (de vises som link), så CSP'en ovenfor er uændret.
 - **Importér** læser en eller flere `.md`- eller `.txt`-filer (højst 1 MB hver) og opretter en ny note for hver i den valgte samling. I `.md` bliver første `# overskrift` eller `title:` i front matter til titlen, og `tags:` i front matter bliver til tags; ellers bruges filnavnet. Andre felter i front matter bliver stående i teksten. `.txt` læses som ren tekst.
 - **Eksportér .md** henter den åbne note som `titel.md` med `# titel` først (og tags i front matter, hvis der er nogen); **Eksportér .txt** henter kun teksten. Eksporten indeholder også ændringer, der endnu ikke er gemt.

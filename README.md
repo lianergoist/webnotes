@@ -128,8 +128,10 @@ The page is in Danish by default. At the bottom of the sidebar you can choose Da
 Notes are stored as plain text on the server (DESCRIPTION in VJOURNAL), so other programs see them unchanged. Markdown is only a view:
 
 - **Write / View** at the top of the editor switches between the text field and the formatted view. The choice is remembered in the browser. Tasks (`- [ ]`) can be checked directly in the view, and this is saved in the text.
-- **Format buttons** (bold, italic, heading, link, bulleted/numbered/task list, quote, code) act on the selection. Shortcuts: Ctrl+B, Ctrl+I, Ctrl+K. Enter in a list continues it, and Enter on an empty item ends it.
+- **Format buttons** (bold, italic, heading, link, bulleted/numbered/task list, outdent, indent, quote, code) act on the selection. Indent and outdent add or remove 4 spaces on every selected line (or the current line). Shortcuts: Ctrl+B, Ctrl+I, Ctrl+K. Enter in a list continues it, and Enter on an empty item ends it.
 - Supported: headings, bold, italic, strikethrough, code and code blocks, quotes, lists (including nested), tasks, tables, horizontal rules and links.
+- **Indentation** works like in DavNotes: every 4 spaces (or a tab) at the start of a line is one indent level (up to 8).
+  This differs from standard Markdown, where 4 spaces start a code block; use ``` for code instead.
 - Security: the note is never rendered as HTML. Only `http`, `https` and `mailto` become links, and images are not loaded (they are shown as links), so the CSP above is unchanged.
 - **Import** reads one or more `.md` or `.txt` files (at most 1 MB each) and creates a new note for each in the selected collection. In `.md`, the first `# heading` or `title:` in front matter becomes the title, and `tags:` in front matter become tags; otherwise the file name is used. Other front matter fields remain in the text. `.txt` is read as plain text.
 - **Export .md** downloads the open note as `title.md` with `# title` first (and tags in front matter, if any); **Export .txt** downloads only the text. The export also includes changes that have not been saved yet.
