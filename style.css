@@ -366,6 +366,12 @@ body {
   .menu-wrap { grid-column: 3; grid-row: 1; justify-self: end; margin-left: 0; }
   .fmt { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; }
 }
+/* Telefon: de 11 formatknapper deler bredden, så de kan stå på én linje. */
+@media (max-width: 480px) {
+  .toolbar { padding-left: 8px; padding-right: 8px; }
+  .fmt { gap: 0; }
+  .fmt .tb { flex: 1 1 0; min-width: 0; padding: 0; }
+}
 
 .tb {
   min-width: 36px;
@@ -411,6 +417,15 @@ body {
 .preview h4, .preview h5, .preview h6 { font-size: 1.0625rem; }
 .preview a { color: var(--focus); }
 .preview a.auto { font-size: 0.875em; } /* links uden beskrivelse (selve adressen) */
+.preview p.tight { margin-bottom: 0; } /* skift i indrykning midt i et afsnit */
+.preview .indent-1 { margin-left: 2em; }
+.preview .indent-2 { margin-left: 4em; }
+.preview .indent-3 { margin-left: 6em; }
+.preview .indent-4 { margin-left: 8em; }
+.preview .indent-5 { margin-left: 10em; }
+.preview .indent-6 { margin-left: 12em; }
+.preview .indent-7 { margin-left: 14em; }
+.preview .indent-8 { margin-left: 16em; }
 .preview ul, .preview ol { padding-left: 1.5em; }
 .preview li > ul, .preview li > ol { margin: 0.2em 0 0; }
 .preview li.task { list-style: none; margin-left: -1.3em; }

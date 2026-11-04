@@ -185,6 +185,10 @@ function markdownTests() {
   check("fed, kursiv, overstreget og kode", has("**f** *k* __f2__ _k2_ ~~s~~ `c`", "<strong>f</strong> <em>k</em> <strong>f2</strong> <em>k2</em> <del>s</del> <code>c</code>"), html("**f** *k* __f2__ _k2_ ~~s~~ `c`"));
   check("understregning midt i et ord er ikke kursiv", has("snake_case_name", "snake_case_name") && !has("snake_case_name", "<em>"));
   check("escape med bagstreg", has("\\*ikke\\*", "*ikke*") && !has("\\*ikke\\*", "<em>"));
+  check("indrykning som i DavNotes: 4 mellemrum (eller tab) er ét niveau, ikke kodeblok",
+    html("a\n    b\n        c\n    d\ne") === '<p class="tight">a</p><p class="indent-1 tight">b</p><p class="indent-2 tight">c</p><p class="indent-1 tight">d</p><p>e</p>' &&
+    html("\tx\n    y") === '<p class="indent-1">x<br>y</p>' && html("   tre") === "<p>tre</p>" && !has("    kode", "<pre>"), html("a\n    b\n        c\n    d\ne"));
+  check("indrykning over 8 niveauer vises som 8, og fed kan stadig gå over linjer", has(" ".repeat(40) + "x", 'class="indent-8"') && has("**a\nb**", "<strong>a<br>b</strong>"), html(" ".repeat(40) + "x"));
   check("punktliste med indlejret liste", has("- a\n- b\n  - c\n- d", "<ul><li><span>a</span></li><li><span>b</span><ul><li><span>c</span></li></ul></li><li><span>d</span></li></ul>"), html("- a\n- b\n  - c\n- d"));
   check("nummereret liste begynder ved første tal", has("3. x\n4. y", '<ol start="3">') && has("1. x\n2. y", "<ol><li>"));
   const tdiv = doc.createElement("div"); tdiv.append(Md.render("tekst\n\n- [ ] a\n- [x] b", doc));
@@ -641,8 +645,8 @@ async function main() {
     const key = (k, extra) => { const ev = new mw.KeyboardEvent("keydown", Object.assign({ key: k, bubbles: true, cancelable: true }, extra)); M("body").dispatchEvent(ev); return ev; };
     const readBlob = (b) => new Promise((res) => { const r = new mw.FileReader(); r.onload = () => res(r.result); r.readAsText(b); });
 
-    check("værktøjslinje: 9 formatknapper, skriv/vis, import og eksport",
-      mdoc.querySelectorAll("[data-fmt]").length === 9 && M("mode-edit").getAttribute("aria-pressed") === "true" && M("mode-preview").getAttribute("aria-pressed") === "false" &&
+    check("værktøjslinje: 11 formatknapper, skriv/vis, import og eksport",
+      mdoc.querySelectorAll("[data-fmt]").length === 11 && M("mode-edit").getAttribute("aria-pressed") === "true" && M("mode-preview").getAttribute("aria-pressed") === "false" &&
       M("preview").hidden && !M("body").hidden && M("btn-import").textContent === "Importér" && M("btn-export-md").textContent === "Eksportér .md");
     check("siden er bygget rigtigt: værktøjslinje og felter ligger i editoren", ["toolbar", "title", "body", "preview", "btn-back"].every((id) => M(id).closest(".editor")) && !mdoc.querySelector(".app > .sheet"));
     check("Tilbage-knappen står først i værktøjslinjen, og 'Ændret' ligger i noten over titlen",
@@ -684,6 +688,15 @@ async function main() {
     check("nummereret -> opgaver (skifter markør) -> citat", l3 === "1. a\n2. b\n3. c" && l4 === "- [ ] a\n- [ ] b\n- [ ] c" && l5 === "> - [ ] a\n> - [ ] b\n> - [ ] c" && M("body").value === l4, [l3, l4, l5]);
     bodyVal("x\n\ny"); caret(0, 4); press("bullets");
     check("tomme linjer i en markering springes over", M("body").value === "- x\n\n- y", M("body").value);
+
+    bodyVal("a\n\nb\n    c"); caret(0, 8); press("indent");
+    const i1 = M("body").value; press("indent"); const i2 = M("body").value; press("outdent"); const i3 = M("body").value;
+    check("ryk ind/tilbage: 4 mellemrum pr. niveau på de valgte linjer, tomme linjer røres ikke",
+      i1 === "    a\n\n    b\n        c" && i2 === "        a\n\n        b\n            c" && i3 === i1, [i1, i2, i3]);
+    bodyVal("  x\n\ty"); caret(0, 6); press("outdent");
+    check("ryk tilbage fjerner også færre end 4 mellemrum og tab, og intet under nul", M("body").value === "x\ny" && (press("outdent"), M("body").value === "x\ny"), M("body").value);
+    bodyVal("tekst"); caret(2); press("indent");
+    check("ryk ind uden markering: markøren følger med", M("body").value === "    tekst" && M("body").selectionStart === 6, [M("body").value, M("body").selectionStart]);
 
     bodyVal("se ord her"); caret(3, 6); press("link");
     check("link: markeringen bliver teksten, og 'url' er markeret", M("body").value === "se [ord](url) her" && M("body").value.slice(M("body").selectionStart, M("body").selectionEnd) === "url", [M("body").value, M("body").selectionStart]);

@@ -621,6 +621,15 @@
     });
   }
 
+  // Ind- og tilbagerykning: 4 mellemrum pr. niveau, som i DavNotes. Tomme linjer i en
+  // markering røres ikke; tilbagerykning fjerner op til 4 mellemrum (eller en tab).
+  function shiftLines(dir) {
+    editLines((lines) => lines.map((l) => {
+      if (l.trim() === "" && lines.length > 1) return l;
+      return dir > 0 ? "    " + l : l.replace(/^(?: {1,4}|\t)/, "");
+    }));
+  }
+
   function toggleQuote() {
     editLines((lines) => {
       const all = lines.every((l) => /^>\s?/.test(l));
@@ -665,6 +674,8 @@
     bullets: () => toggleList("bullets"),
     numbers: () => toggleList("numbers"),
     todo: () => toggleList("todo"),
+    outdent: () => shiftLines(-1),
+    indent: () => shiftLines(1),
     quote: toggleQuote,
     code: insertCode,
   };

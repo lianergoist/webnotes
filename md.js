@@ -7,6 +7,8 @@
  *
  * Understøttet: overskrifter, afsnit, **fed**, *kursiv*, ~~overstreget~~, `kode`, kodeblokke,
  * citater, punkt- og nummerlister (også indlejrede), opgaver (- [ ]), tabeller, linjer og links.
+ * Indrykning: 4 mellemrum (eller en tab) først på en linje er ét niveau, som i DavNotes
+ * (ikke en kodeblok som i CommonMark; brug ``` til kode).
  * Virker både som <script> i browseren (window.Md) og som require() i Node. */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
@@ -104,7 +106,8 @@
   const LI = /^( *)([-*+]|\d{1,9}[.)])\s+(.*)$/;
   const SEP = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
 
-  const isBlank = (l) => l.t.trim() === "";
+  const MAX_INDENT = 8; // flere niveauer vises som det ottende
+  const isBlank =(l) => l.t.trim() === "";
   function startsBlock(l) {
     return FENCE.test(l.t) || HEADING.test(l.t) || HR.test(l.t) || QUOTE.test(l.t) || LI.test(l.t);
   }
@@ -251,11 +254,21 @@
         continue;
       }
 
+      // Afsnit. Som i DavNotes er hver 4 mellemrum (eller tab) først på en linje ét
+      // indrykningsniveau; linjer med samme niveau bliver ét afsnit, og et skift i
+      // niveauet midt i et afsnit giver ikke ekstra luft.
       const buf = [];
-      while (i < lines.length && !isBlank(lines[i]) && (buf.length === 0 || !startsBlock(lines[i]))) buf.push(lines[i++].t.trim());
-      const p = doc.createElement("p");
-      inline(doc, buf.join("\n"), p, true);
-      out.append(p);
+      while (i < lines.length && !isBlank(lines[i]) && (buf.length === 0 || !startsBlock(lines[i]))) buf.push(lines[i++].t);
+      const levelOf = (t) => Math.min(MAX_INDENT, Math.floor(/^ */.exec(t)[0].length / 4));
+      for (let k = 0; k < buf.length;) {
+        const lv = levelOf(buf[k]), run = [];
+        while (k < buf.length && levelOf(buf[k]) === lv) run.push(buf[k++].trim());
+        const p = doc.createElement("p");
+        if (lv > 0) p.classList.add("indent-" + lv);
+        if (k < buf.length) p.classList.add("tight");
+        inline(doc, run.join("\n"), p, true);
+        out.append(p);
+      }
     }
   }
 
