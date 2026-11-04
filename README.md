@@ -1,41 +1,43 @@
-# WebNotes - webklient til VJOURNAL i Radicale
+# WebNotes - web client for VJOURNAL notes in Radicale
 
-Statiske filer (HTML, CSS og tre scripts, ingen afhængigheder, ingen build). Siden taler
-CalDAV direkte med din Radicale og læser/skriver samme `.ics`-noter som `notesync.py`
-og jtx Board.
+**English** | [Dansk](README.da.md)
 
-| Fil | Indhold |
+Static files (HTML, CSS and JavaScript, no dependencies, no build step). The page talks
+CalDAV directly to your Radicale server and reads/writes the same `.ics` notes as `notesync.py`
+and jtx Board.
+
+| File | Contents |
 |---|---|
-| `index.html`, `style.css` | Siden: noteliste og editor, mobilvenlig, lys/mørk efter systemet |
-| `ical.js` | Læs/skriv VJOURNAL (port af iCalendar-laget i `notesync.py`) |
-| `md.js` | Markdown-visning, import og eksport af .md/.txt |
-| `i18n.js` | Tekster på dansk, engelsk, tysk, spansk og fransk samt sprogvalg |
-| `dav.js` | CalDAV-klient: find samlinger, hent, opret, ret, slet |
-| `app.js` | Brugerfladen: liste, søgning, autosave, konflikter, sletning, opdatering hvert 30. sek. |
-| `stamp.js` | Sætter versionsnummer på filerne i `index.html` (se nedenfor) |
-| `web-selftest.js`, `package.json` | Tests (ikke en del af selve siden) |
+| `index.html`, `style.css` | The page: note list and editor, mobile friendly, light/dark following the system |
+| `ical.js` | Read/write VJOURNAL (port of the iCalendar layer in `notesync.py`) |
+| `md.js` | Markdown rendering, import and export of .md/.txt |
+| `i18n.js` | Texts in Danish, English, German, Spanish and French, plus language selection |
+| `dav.js` | CalDAV client: discover collections, fetch, create, update, delete |
+| `app.js` | User interface: list, search, autosave, conflicts, deletion, refresh every 30 s |
+| `stamp.js` | Adds version numbers to the files referenced in `index.html` (see below) |
+| `web-selftest.js`, `package.json` | Tests (not part of the page itself) |
 
-## Opsætning på din server
+## Server setup
 
-Siden skal ligge på **samme domæne som Radicale** (så der ikke er CORS, og så browserens
-egen login-dialog kan bruges). Filerne serveres direkte fra `/var/www/rpix.dk/notes` på ét domæne:
+The page must be served from **the same domain as Radicale** (so there is no CORS, and the
+browser's own login dialog can be used). The files are served directly from `/var/www/rpix.dk/notes` on one domain:
 
-| Adresse | Radicale på | Vhost |
+| Address | Radicale at | Vhost |
 |---|---|---|
-| `https://caldav.rpix.dk/notes/` | `/dav/` (`/` er kontoportalen) | `caldav.rpix.dk-le-ssl.conf` |
+| `https://caldav.rpix.dk/notes/` | `/dav/` (`/` is the account portal) | `caldav.rpix.dk-le-ssl.conf` |
 
-- `caldav.rpix.dk/noter/...` sender videre til `/notes/...`.
-- `radicale.rpix.dk/notes/` serverer også siden (samme filer, Radicale på `/`), og
-  `radicale.rpix.dk/noter/...` sender videre til `/notes/...` (`radicale.rpix.dk-le-ssl.conf`).
-- `noter.rpix.dk` er slået fra (`a2dissite`). På `rpix.dk` giver `/noter` og `/notes` 404, og mappen
-  er spærret med `Require all denied`.
+- `caldav.rpix.dk/noter/...` redirects to `/notes/...`.
+- `radicale.rpix.dk/notes/` also serves the page (same files, Radicale at `/`), and
+  `radicale.rpix.dk/noter/...` redirects to `/notes/...` (`radicale.rpix.dk-le-ssl.conf`).
+- `noter.rpix.dk` is disabled (`a2dissite`). On `rpix.dk`, `/noter` and `/notes` return 404, and the
+  directory is locked with `Require all denied`.
 
-Siden finder selv Radicale: den spørger først på `/`, og svarer der ikke CalDAV, prøver den `/dav/`
-(`davRoots` i `dav.js`/`app.js`; kan sættes via `window.NOTEWEB_CONFIG`). Login- og netværksfejl
-stopper søgningen med det samme.
+The page finds Radicale on its own: it first asks at `/`, and if that does not answer CalDAV, it tries `/dav/`
+(`davRoots` in `dav.js`/`app.js`; can be set via `window.NOTEWEB_CONFIG`). Login and network errors
+stop the search immediately.
 
-Uddrag af `caldav.rpix.dk` (lægges siden på et domæne, hvor `ProxyPass /` sender alt til Radicale,
-skal der også stå `ProxyPass /notes !` før den):
+Excerpt from `caldav.rpix.dk` (if the page is placed on a domain where `ProxyPass /` sends everything to Radicale,
+you also need `ProxyPass /notes !` before it):
 
 ```apache
 RedirectMatch 301 ^/noter(/.*)?$ /notes$1
@@ -60,90 +62,90 @@ ProxyPassReverse /dav/ http://localhost:5232/
 </Location>
 ```
 
-Skal bruge `mod_alias`, `mod_proxy`, `mod_proxy_http` og `mod_headers`. Derefter:
+Requires `mod_alias`, `mod_proxy`, `mod_proxy_http` and `mod_headers`. Then:
 
 ```
 sudo apache2ctl configtest && sudo systemctl reload apache2
 ```
 
-Browseren spørger om brugernavn og adgangskode (Radicales egen login), og siden finder selv
-din samling til noter. Login og valgt samling huskes for hvert domæne for sig.
+The browser asks for a username and password (Radicale's own login), and the page finds
+your notes collection by itself. Login and selected collection are remembered separately for each domain.
 
-- Vælgeren øverst på listen viser altid navnet på den samling, du bruger, også når der kun er
-  én. Har du flere samlinger med VJOURNAL, kan du skifte mellem dem; samlinger der *kun* er
-  til VJOURNAL står først, og dit valg huskes.
-- **Ny samling…** nederst i vælgeren opretter en ny samling under din egen bruger. Den får kun lov
-  at indeholde noter (VJOURNAL), og adressen laves af navnet (fx "Mine idéer" bliver til
-  `/<bruger>/mine-ideer/`). Navnet kan ikke ændres bagefter herfra. Findes der slet ingen
-  samling, tilbyder siden at oprette den første.
-- Finder siden ikke samlingen, kan du angive stien: `/notes/?col=/thomas/noter/`.
+- The selector at the top of the list always shows the name of the collection you are using, even when there is
+  only one. If you have several collections with VJOURNAL, you can switch between them; collections that are
+  *only* for VJOURNAL are listed first, and your choice is remembered.
+- **New collection…** at the bottom of the selector creates a new collection under your own user. It may only
+  contain notes (VJOURNAL), and the address is derived from the name (e.g. "Mine idéer" becomes
+  `/<user>/mine-ideer/`). The name cannot be changed from here afterwards. If there is no
+  collection at all, the page offers to create the first one.
+- If the page cannot find the collection, you can specify the path: `/notes/?col=/thomas/noter/`.
 
-## Hvordan den opfører sig
+## How it behaves
 
-- **Autosave** 1,2 sekund efter sidste tastetryk, og ved Ctrl/Cmd+S. Statuslinjen viser Ændret, Gemmer, Gemt.
-- **Ingen note overskrives i blinde.** Hvert gem bruger `If-Match` med noteens etag.
-- **Konflikt** (noten er ændret et andet sted, mens den er åben): den andens version bliver
-  stående i originalen, og din tekst gemmes som en ny note med "(konflikt)" i titlen. Samme
-  regel som i `notesync.py`. Er noten slettet et andet sted, oprettes den igen med dine ændringer.
-- **Andre klienters data bevares**: kun titel, tekst, tags og tidsstempler ændres; `X-`-felter,
-  `CLASS`, `STATUS`, `PRODID` m.m. står urørt.
-- **Uden forbindelse** bliver teksten stående i editoren og forsøges gemt igen hvert 8. sekund.
-  Siden virker ikke offline (det gør Android-appen).
-- **Opdatering**: hvert 30. sekund og når fanen får fokus tjekkes samlingens ctag; først hvis
-  den er ændret hentes noterne igen. Noten du skriver i, bliver aldrig overskrevet midt i en redigering.
-- Notetekst indsættes kun som tekst (aldrig som HTML), og CSP'en ovenfor tillader kun filer fra eget domæne.
+- **Autosave** 1.2 seconds after the last keystroke, and on Ctrl/Cmd+S. The status line shows Changed, Saving, Saved.
+- **No note is overwritten blindly.** Every save uses `If-Match` with the note's etag.
+- **Conflict** (the note was changed elsewhere while open): the other version stays
+  in the original, and your text is saved as a new note with "(conflict)" in the title. Same
+  rule as in `notesync.py`. If the note was deleted elsewhere, it is recreated with your changes.
+- **Other clients' data is preserved**: only title, text, tags and timestamps are changed; `X-` fields,
+  `CLASS`, `STATUS`, `PRODID` etc. are left untouched.
+- **Without a connection** the text stays in the editor and saving is retried every 8 seconds.
+  The page does not work offline (the Android app does).
+- **Refresh**: every 30 seconds and when the tab gains focus, the collection's ctag is checked; the notes
+  are only fetched again if it has changed. The note you are typing in is never overwritten mid-edit.
+- Note text is only inserted as text (never as HTML), and the CSP above only allows files from the same domain.
 
-## Kendte begrænsninger
+## Known limitations
 
-- **Log ud** (i ⋯-menuen) er det bedste, Basic-login tillader: det ventende gemmes, og browseren får et
-  forkert login (`XMLHttpRequest` med brugernavn og adgangskode), så den glemmer det rigtige. Afprøvet i
-  Chromium; andre browsere bør gøre det samme, men det er ikke en standard. Beskeden beder derfor folk
-  på delte computere om også at lukke browseren. Menuen sidder i editoren, så på en smal skærm skal en
-  note være åben, før man kan komme til den.
-- Kun ren tekst (ingen Markdown-visning). Tags med komma i selve tagget deles ved redigering.
-- `SEQUENCE` øges ikke ved redigering (det gør jtx Board).
-- Hele listen hentes igen, når samlingen er ændret. Fint til hundreder af noter, ikke tusinder.
-  Android-appen bør bruge `sync-collection` som `notesync.py`.
+- **Log out** (in the ⋯ menu) is the best Basic auth allows: pending changes are saved, and the browser is given a
+  wrong login (`XMLHttpRequest` with username and password) so it forgets the real one. Tested in
+  Chromium; other browsers should behave the same, but it is not a standard. The message therefore asks people
+  on shared computers to also close the browser. The menu is in the editor, so on a narrow screen a
+  note must be open before you can reach it.
+- Tags containing a comma are split when edited.
+- `SEQUENCE` is not incremented on edit (jtx Board does).
+- The whole list is fetched again when the collection has changed. Fine for hundreds of notes, not thousands.
+  The Android app should use `sync-collection` like `notesync.py`.
 
 ## Tests
 
 ```
 npm install
-PYTHON=.venv/bin/python npm test     # eller blot "npm test", hvis python3 har radicale
+PYTHON=.venv/bin/python npm test     # or just "npm test" if python3 has radicale
 ```
 
-Starter en lokal Radicale med login og kører: iCalendar-lag (også krydstjek mod `notesync.py`,
-som skal ligge i mappen over eller angives med `NOTESYNC_DIR`), CalDAV-klienten, og hele
-brugerfladen i jsdom (opret, ret, søg, slet, konflikt, offline, forkert login).
-jsdom er ikke en rigtig browser: layout, CSS og browserens login-dialog er ikke afprøvet.
+Starts a local Radicale with login and runs: the iCalendar layer (including a cross-check against `notesync.py`,
+which must be in the parent directory or specified with `NOTESYNC_DIR`), the CalDAV client, and the whole
+user interface in jsdom (create, edit, search, delete, conflict, offline, wrong login).
+jsdom is not a real browser: layout, CSS and the browser's login dialog are not tested.
 
-## Sprog
+## Languages
 
-Siden er på dansk som standard. Nederst i sidepanelet kan man vælge Dansk, English, Deutsch, Español eller Français; valget huskes i browseren. `?lang=en` (eller `de`, `es`, `fr`) i adressen vælger også sproget (og huskes). Appens navn er "WebNotes" på alle sprog. Alle tekster ligger i `i18n.js`; et nyt sprog tilføjes ved at kopiere `da`-blokken, oversætte den og tilføje sproget i `LANGS`. Sprogvælgeren bygges ud fra `LANGS` (valgene i `<select id="lang">` i `index.html` er kun en reserve, før scriptet kører). Titlen på en konfliktkopi følger sproget ("(konflikt)" / "(conflict)" / "(Konflikt)" / "(conflicto)" / "(conflit)").
+The page is in Danish by default. At the bottom of the sidebar you can choose Dansk, English, Deutsch, Español or Français; the choice is remembered in the browser. `?lang=en` (or `de`, `es`, `fr`) in the address also selects the language (and is remembered). The app's name is "WebNotes" in all languages. All texts are in `i18n.js`; a new language is added by copying the `da` block, translating it and adding the language to `LANGS`. The language selector is built from `LANGS` (the options in `<select id="lang">` in `index.html` are only a fallback before the script runs). The title of a conflict copy follows the language ("(konflikt)" / "(conflict)" / "(Konflikt)" / "(conflicto)" / "(conflit)").
 
-## Markdown, import og eksport
+## Markdown, import and export
 
-Noterne gemmes som ren tekst i serveren (DESCRIPTION i VJOURNAL), så andre programmer ser dem uændret. Markdown er kun en visning:
+Notes are stored as plain text on the server (DESCRIPTION in VJOURNAL), so other programs see them unchanged. Markdown is only a view:
 
-- **Skriv / Vis** øverst i editoren skifter mellem tekstfeltet og den formaterede visning. Valget huskes i browseren. Opgaver (`- [ ]`) kan krydses af direkte i visningen, og det gemmes i teksten.
-- **Formatknapper** (fed, kursiv, overskrift, link, punkt-/nummereret-/opgaveliste, citat, kode) virker på markeringen. Genveje: Ctrl+B, Ctrl+I, Ctrl+K. Enter i en liste fortsætter den, og Enter på et tomt punkt afslutter den.
-- Understøttet: overskrifter, fed, kursiv, overstreget, kode og kodeblokke, citater, lister (også indlejrede), opgaver, tabeller, vandrette streger og links.
-- Sikkerhed: noten vises aldrig som HTML. Kun `http`, `https` og `mailto` bliver til links, og billeder hentes ikke (de vises som link), så CSP'en ovenfor er uændret.
-- **Importér** læser en eller flere `.md`- eller `.txt`-filer (højst 1 MB hver) og opretter en ny note for hver i den valgte samling. I `.md` bliver første `# overskrift` eller `title:` i front matter til titlen, og `tags:` i front matter bliver til tags; ellers bruges filnavnet. Andre felter i front matter bliver stående i teksten. `.txt` læses som ren tekst.
-- **Eksportér .md** henter den åbne note som `titel.md` med `# titel` først (og tags i front matter, hvis der er nogen); **Eksportér .txt** henter kun teksten. Eksporten indeholder også ændringer, der endnu ikke er gemt.
+- **Write / View** at the top of the editor switches between the text field and the formatted view. The choice is remembered in the browser. Tasks (`- [ ]`) can be checked directly in the view, and this is saved in the text.
+- **Format buttons** (bold, italic, heading, link, bulleted/numbered/task list, quote, code) act on the selection. Shortcuts: Ctrl+B, Ctrl+I, Ctrl+K. Enter in a list continues it, and Enter on an empty item ends it.
+- Supported: headings, bold, italic, strikethrough, code and code blocks, quotes, lists (including nested), tasks, tables, horizontal rules and links.
+- Security: the note is never rendered as HTML. Only `http`, `https` and `mailto` become links, and images are not loaded (they are shown as links), so the CSP above is unchanged.
+- **Import** reads one or more `.md` or `.txt` files (at most 1 MB each) and creates a new note for each in the selected collection. In `.md`, the first `# heading` or `title:` in front matter becomes the title, and `tags:` in front matter become tags; otherwise the file name is used. Other front matter fields remain in the text. `.txt` is read as plain text.
+- **Export .md** downloads the open note as `title.md` with `# title` first (and tags in front matter, if any); **Export .txt** downloads only the text. The export also includes changes that have not been saved yet.
 
-## Nye versioner og cache
+## New versions and caching
 
-`index.html` henviser til `style.css` og scripts med et versionsnummer, fx `app.js?v=1a2b3c4d`, som er en kort hash af filens indhold. Ændres en fil, ændres nummeret, og browseren henter den igen i stedet for at bruge en gammel kopi. Kør derfor **efter hver ændring** af en `.js`- eller `.css`-fil:
+`index.html` references `style.css` and the scripts with a version number, e.g. `app.js?v=1a2b3c4d`, which is a short hash of the file's contents. When a file changes, the number changes, and the browser fetches it again instead of using an old copy. So **after every change** to a `.js` or `.css` file, run:
 
     node stamp.js
 
-og kopiér derefter filerne (også `index.html`) til serveren. `node stamp.js --check` ændrer intet, men fejler, hvis nummeret er forældet; testene (`npm test`) gør det samme.
+and then copy the files (including `index.html`) to the server. `node stamp.js --check` changes nothing, but fails if a number is outdated; the tests (`npm test`) do the same.
 
-Selve `index.html` må ikke ligge i cachen længe, ellers ser browseren aldrig de nye numre. Det klarer Apache med revalidering, som stadig er hurtig (svar 304, hvis intet er ændret):
+`index.html` itself must not be cached for long, otherwise the browser never sees the new numbers. Apache handles this with revalidation, which is still fast (304 response if nothing has changed):
 
     <FilesMatch "\.html$">
         Header set Cache-Control "no-cache"
     </FilesMatch>
 
-Er `mod_headers` slået til (det bruges allerede til CSP'en), kan det stå i samme vhost.
+If `mod_headers` is enabled (it is already used for the CSP), this can go in the same vhost.
