@@ -1,0 +1,8 @@
+{
+  "name": "webnotes",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Webklient til VJOURNAL-noter i Radicale (statiske filer) med tests",
+  "scripts": { "test": "node web-selftest.js", "stamp": "node stamp.js" },
+  "devDependencies": { "jsdom": "^26.0.0" }
+}

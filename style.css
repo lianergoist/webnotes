@@ -1,0 +1,476 @@
+/* WebNotes - webklient.
+ *
+ * Skriftlig side af en notesamling: noterne sættes i en serif (titel og tekst), værktøjerne
+ * i systemets sans. Det eneste udtryk ud over det neutrale er markørstregen under titlen på
+ * den valgte note, som en overstregning med highlighter. Alt andet er stille.
+ * Ingen eksterne skrifttyper eller billeder, så siden kan køre med stram CSP. */
+
+:root {
+  color-scheme: light dark;
+  --paper: #F6F8FA;
+  --panel: #E9EEF3;
+  --ink: #1B2733;
+  --muted: #5B6773;
+  --line: #D3DBE3;
+  --marker: #F2D64B;
+  --focus: #2F6FDE;
+  --danger: #B3261E;
+  --info-bg: #DDE7F1;
+  --err-bg: #FBE4E1;
+  --err-ink: #6E1912;
+  --btn-bg: #1B2733;
+  --btn-ink: #F6F8FA;
+  --hover: rgba(27, 39, 51, 0.07);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "Noto Serif", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12171D;
+    --panel: #171E26;
+    --ink: #E6EAEE;
+    --muted: #9AA6B2;
+    --line: #2A3440;
+    --marker: #6B5F1C;
+    --focus: #7FA8F5;
+    --danger: #FF9C94;
+    --info-bg: #1F2B38;
+    --err-bg: #3A1B18;
+    --err-ink: #FFD3CE;
+    --btn-bg: #E6EAEE;
+    --btn-ink: #12171D;
+    --hover: rgba(230, 234, 238, 0.08);
+  }
+}
+
+[hidden] { display: none !important; }
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.45 var(--sans);
+  -webkit-text-size-adjust: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ---- skelet ---- */
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+.sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.editor {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.bar h1 {
+  margin: 0;
+  font: 650 1.375rem/1.2 var(--serif);
+  letter-spacing: -0.01em;
+}
+
+.sidebar .bar h1 { flex: 1; }
+
+/* Linjen mellem værktøjslinjen og titlen: gemt-status til venstre, "Ændret ..." til højre */
+.statusline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 1.25rem;
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* ---- knapper ---- */
+
+.btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+  font-weight: 600;
+}
+
+.btn.ghost { border-color: var(--line); }
+.btn.danger { border-color: var(--line); color: var(--danger); }
+.btn.small { min-height: 32px; padding: 0 10px; border-color: currentColor; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+
+/* ---- søgning og liste ---- */
+
+.tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 8px;
+}
+
+.tools input,
+.tools select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 24px;
+}
+
+.group {
+  margin: 18px 10px 4px;
+  color: var(--muted);
+  font: 600 0.8125rem/1.3 var(--sans);
+}
+
+.list ul { margin: 0; padding: 0; list-style: none; }
+
+.note {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.note:hover { background: var(--hover); }
+
+.note-title {
+  grid-column: 1;
+  overflow: hidden;
+  font: 600 1.0625rem/1.35 var(--serif);
+}
+
+.note-title.untitled { color: var(--muted); font-weight: 400; font-style: italic; }
+
+.title-text {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.note[aria-current="true"] .title-text {
+  padding: 0 0.2em;
+  margin: 0 -0.2em;
+  background: linear-gradient(transparent 56%, var(--marker) 56%, var(--marker) 92%, transparent 92%);
+}
+
+.note-time {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.note-snippet,
+.note-tags {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  padding: 8px 18px 24px;
+  color: var(--muted);
+}
+
+.foot {
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.lang {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+/* ---- editor ---- */
+
+/* "Ændret ...": kun i visning, højrestillet */
+.meta { margin-left: auto; text-align: right; }
+
+.sheet {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 8px 24px 24px;
+}
+
+.title-input,
+.tags-input,
+.body-input {
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.title-input {
+  padding: 8px 0;
+  font: 650 1.75rem/1.2 var(--serif);
+  letter-spacing: -0.01em;
+}
+
+.tags-input {
+  padding: 4px 0 16px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.body-input {
+  flex: 1;
+  min-height: 0;
+  padding: 8px 0;
+  font: 1.125rem/1.7 var(--serif);
+  resize: none;
+}
+
+.title-input:focus-visible,
+.tags-input:focus-visible,
+.body-input:focus-visible { outline-offset: 6px; }
+
+::placeholder { color: var(--muted); opacity: 0.8; }
+
+/* ---- værktøjslinje ---- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.seg, .fmt { display: flex; align-items: center; gap: 2px; }
+
+/* Menuen ligger yderst til højre i værktøjslinjen. */
+.menu-wrap { position: relative; margin-left: auto; }
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  min-width: 11rem;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+.menu-item {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.menu-item:hover:not(:disabled), .menu-item:focus-visible { background: var(--hover); }
+.menu-item:disabled { opacity: 0.4; cursor: default; }
+.menu-item.danger { color: var(--danger); }
+.menu-sep { margin: 4px 0; border: 0; border-top: 1px solid var(--line); }
+
+/* Smal skærm: første linje har WebNotes til venstre, Skriv/Vis i midten og menuen til højre;
+ * anden linje er formatknapperne. */
+@media (max-width: 859px) {
+  .toolbar { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px 8px; }
+  #btn-back { grid-column: 1; grid-row: 1; justify-self: start; }
+  .seg { grid-column: 2; grid-row: 1; }
+  .menu-wrap { grid-column: 3; grid-row: 1; justify-self: end; margin-left: 0; }
+  .fmt { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; }
+}
+
+.tb {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.tb:hover:not(:disabled) { background: var(--hover); }
+.tb:disabled { opacity: 0.4; cursor: default; }
+
+.seg { border: 1px solid var(--line); border-radius: 9px; padding: 2px; }
+.seg-btn[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-ink); font-weight: 600; }
+.seg-btn[aria-pressed="true"]:hover:not(:disabled) { background: var(--btn-bg); }
+
+/* ---- visning af Markdown ---- */
+
+.preview {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 0 24px;
+  font: 1.125rem/1.7 var(--serif);
+  overflow-wrap: anywhere;
+}
+
+.preview > :first-child { margin-top: 0; }
+.preview p, .preview ul, .preview ol, .preview blockquote, .preview pre, .preview .table-wrap { margin: 0 0 1em; }
+.preview h1, .preview h2, .preview h3, .preview h4, .preview h5, .preview h6 {
+  margin: 1.3em 0 0.4em;
+  font-family: var(--serif);
+  line-height: 1.25;
+}
+.preview h1 { font-size: 1.75rem; }
+.preview h2 { font-size: 1.4rem; }
+.preview h3 { font-size: 1.2rem; }
+.preview h4, .preview h5, .preview h6 { font-size: 1.0625rem; }
+.preview a { color: var(--focus); }
+.preview a.auto { font-size: 0.875em; } /* links uden beskrivelse (selve adressen) */
+.preview ul, .preview ol { padding-left: 1.5em; }
+.preview li > ul, .preview li > ol { margin: 0.2em 0 0; }
+.preview li.task { list-style: none; margin-left: -1.3em; }
+.preview li.task input { width: 1.05em; height: 1.05em; margin: 0 0.3em 0 0; vertical-align: -0.1em; cursor: pointer; }
+.preview blockquote { padding: 0 0 0 1em; border-left: 3px solid var(--marker); color: var(--muted); }
+.preview blockquote > :last-child { margin-bottom: 0; }
+.preview hr { margin: 1.5em 0; border: 0; border-top: 1px solid var(--line); }
+.preview code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--panel);
+  font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.preview pre { padding: 12px 14px; overflow-x: auto; border-radius: 8px; background: var(--panel); line-height: 1.5; }
+.preview pre code { padding: 0; background: none; }
+.preview .table-wrap { overflow-x: auto; }
+.preview table { border-collapse: collapse; font: 0.9375rem/1.45 var(--sans); }
+.preview th, .preview td { padding: 6px 12px; border: 1px solid var(--line); text-align: left; }
+.preview th { background: var(--panel); }
+.preview .a-center { text-align: center; }
+.preview .a-right { text-align: right; }
+.preview-empty { color: var(--muted); font-style: italic; }
+
+/* ---- meddelelser ---- */
+
+.banner {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--info-bg);
+  font-size: 0.9375rem;
+}
+
+.banner.error { background: var(--err-bg); color: var(--err-ink); }
+.banner-text { flex: 1; min-width: 0; }
+
+/* ---- mobil: ét felt ad gangen ---- */
+
+#btn-back { display: none; }
+.tb.back { border-color: var(--line); }
+.tb.back::before { content: "\2190"; margin-right: 0.4em; } /* ← */
+
+@media (max-width: 759px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar, .editor { grid-column: 1; border-right: 0; }
+  body[data-view="list"] .editor { display: none; }
+  body[data-view="editor"] .sidebar { display: none; }
+  #btn-back { display: inline-flex; align-items: center; }
+  .sheet { padding: 4px 16px 16px; }
+  .title-input { font-size: 1.5rem; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .note, .btn { transition: background-color 0.12s; }
+}
+
+/* Logget ud: kun beskeden (banneret) med "Log ind" vises. */
+body[data-view="loggedout"] .sidebar,
+body[data-view="loggedout"] .editor { display: none !important; }
+body[data-view="loggedout"] #banner-close { display: none; }
